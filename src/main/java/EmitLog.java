@@ -11,9 +11,9 @@ import java.util.concurrent.TimeoutException;
 
 
 
-public class NewTask {
+public class EmitLog {
 
-    private final static String QUEUE_NAME = "task_queue";
+    public final static String EXCHANGE_NAME = "logs";
 
     private static String getMessage(String[] strings){
         if (strings.length < 1)
@@ -34,17 +34,16 @@ public class NewTask {
     public static void main(String[] argv)
             throws java.io.IOException, TimeoutException {
 
-        String message = getMessage(argv);
-
         ConnectionFactory factory = new ConnectionFactory();
         factory.setHost("localhost");
         Connection connection = factory.newConnection();
-
         Channel channel = connection.createChannel();
-        boolean durable = true;
-        channel.queueDeclare(QUEUE_NAME, durable, false, false, null);
 
-        channel.basicPublish("", QUEUE_NAME, MessageProperties.PERSISTENT_TEXT_PLAIN, message.getBytes());
+        channel.exchangeDeclare(EXCHANGE_NAME, "fanout");
+
+        String message = getMessage(argv);
+
+        channel.basicPublish(EXCHANGE_NAME, "", MessageProperties.PERSISTENT_TEXT_PLAIN, message.getBytes());
         System.out.println(" [x] Sent '" + message + "'");
 
         channel.close();

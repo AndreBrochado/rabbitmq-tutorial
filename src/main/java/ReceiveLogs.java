@@ -7,9 +7,7 @@ import com.rabbitmq.client.*;
 import java.io.IOException;
 import java.util.concurrent.TimeoutException;
 
-public class Worker {
-
-    private final static String QUEUE_NAME = "task_queue";
+public class ReceiveLogs {
 
     private static void doWork(String task) throws InterruptedException {
         for (char ch: task.toCharArray()) {
@@ -26,8 +24,10 @@ public class Worker {
         Connection connection = factory.newConnection();
         final Channel channel = connection.createChannel();
 
-        boolean durable = true;
-        channel.queueDeclare(QUEUE_NAME, durable, false, false, null);
+        channel.exchangeDeclare(EmitLog.EXCHANGE_NAME, "fanout");
+        String queueName = channel.queueDeclare().getQueue();
+        channel.queueBind(queueName, EmitLog.EXCHANGE_NAME, "");
+
         System.out.println(" [*] Waiting for messages. To exit press CTRL+C");
 
         channel.basicQos(1);
@@ -38,17 +38,10 @@ public class Worker {
                 String message = new String(body, "UTF-8");
 
                 System.out.println(" [x] Received '" + message + "'");
-                try {
-                    doWork(message);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                } finally {
-                    System.out.println(" [x] Done");
-                    channel.basicAck(envelope.getDeliveryTag(), false);
+
                 }
-            }
         };
-        channel.basicConsume(QUEUE_NAME, false, consumer); //we are using channel.basicAck so we don't need the autoAck=true
+        channel.basicConsume(queueName, true, consumer); //we aren't using channel.basicAck so we need the autoAck=true
     }
 
 }
