@@ -5,6 +5,7 @@
 import com.rabbitmq.client.ConnectionFactory;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.Channel;
+import com.rabbitmq.client.MessageProperties;
 
 import java.util.concurrent.TimeoutException;
 
@@ -12,7 +13,7 @@ import java.util.concurrent.TimeoutException;
 
 public class NewTask {
 
-    private final static String QUEUE_NAME = "hello";
+    private final static String QUEUE_NAME = "task_queue";
 
     private static String getMessage(String[] strings){
         if (strings.length < 1)
@@ -40,9 +41,10 @@ public class NewTask {
         Connection connection = factory.newConnection();
 
         Channel channel = connection.createChannel();
-        channel.queueDeclare(QUEUE_NAME, false, false, false, null);
+        boolean durable = true;
+        channel.queueDeclare(QUEUE_NAME, durable, false, false, null);
 
-        channel.basicPublish("", QUEUE_NAME, null, message.getBytes());
+        channel.basicPublish("", QUEUE_NAME, MessageProperties.PERSISTENT_TEXT_PLAIN, message.getBytes());
         System.out.println(" [x] Sent '" + message + "'");
 
         channel.close();
